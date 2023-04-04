@@ -12,7 +12,7 @@ OWNERS_ID = []
 bot = telepot.Bot('')
 
 time_pattern = "^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"
-
+path_to_bot_log = ""
 unauthorized_supported_commands = ['/roll',
                                    '/time',
                                    '/id']
@@ -51,7 +51,16 @@ def mine_log_task(chat_id):
 def owners_commands(user_id, chat_id, command_type, command_mode):
     if OWNERS_ID.__contains__(user_id):
         if command_type == authorized_supported_commands[0]:
-            bot.sendMessage(chat_id, "/self appears soon")
+            file_data = ""
+            bot.sendMessage(chat_id, "Reading file...")
+            with open(path_to_bot_log, encoding='utf8') as f:
+                for line in f:
+                    file_data += line.strip()
+                    if len(file_data) > 4080:
+                        bot.sendMessage(chat_id, "{}\n".format(file_data))
+                        file_data = ""
+
+            bot.sendMessage(chat_id, file_data)
             return "SUCCESS"
 
         elif command_type == authorized_supported_commands[1]:
@@ -143,4 +152,4 @@ print("I am listening since {}...".format(datetime.datetime.now()))
 
 while 1:
     schedule.run_pending()
-    time.sleep(10)
+    time.sleep(100)
