@@ -32,30 +32,6 @@ class Authorized(Enum):
     STATS_CANCEL = '/stats_cancel'
 
 
-# unauthorized_supported_commands = ['/roll',
-#                                    '/time',
-#                                    '/id']
-
-# authorized_supported_commands = ['/self',
-#                                  '/auth',
-#                                  '/stats',
-#                                  '/stats_time',
-#                                  '/stats_jobs',
-#                                  '/stats_cancel']
-
-# combined_commands = [authorized_supported_commands,
-#                      unauthorized_supported_commands]
-
-
-# def verify_command(command):
-# if combined_commands[0].__contains__(command):
-#     return True
-# elif combined_commands[1].__contains__(command):
-#     return True
-# else:
-#     return False
-
-
 def redirect_std_out():
     sys.stdout.flush()
     os.system(output_path)
@@ -67,70 +43,63 @@ def mine_log_task(chat_id):
 
 
 def owners_commands(user_id, chat_id, command_type, command_mode):
-    if OWNERS_ID.__contains__(user_id):
-        if command_type == Authorized.SELF:
-            file_data = ""
-            bot.sendMessage(chat_id, "Reading file...")
-            with open(path_to_bot_log, encoding='utf8') as f:
-                for line in f:
-                    file_data += line.strip()
-                    if len(file_data) > 4080:
-                        bot.sendMessage(chat_id, "{}\n".format(file_data))
-                        file_data = ""
+    if command_type == Authorized.SELF.value:
+        file_data = ""
+        bot.sendMessage(chat_id, "Reading file...")
+        with open(path_to_bot_log, encoding='utf8') as f:
+            for line in f:
+                file_data += line.strip()
+                if len(file_data) > 4080:
+                    bot.sendMessage(chat_id, "{}\n".format(file_data))
+                    file_data = ""
 
-            bot.sendMessage(chat_id, file_data)
-            return "SUCCESS"
+        bot.sendMessage(chat_id, file_data)
+        return "SUCCESS"
 
-        elif command_type == Authorized.AUTH:
-            bot.sendMessage(chat_id, "/auth appears soon")
-            return "SUCCESS"
+    elif command_type == Authorized.AUTH.value:
+        bot.sendMessage(chat_id, "/auth appears soon")
+        return "SUCCESS"
 
-        elif command_type == Authorized.STATS:
-            bot.sendMessage(chat_id, "/stats appears soon")
-            return "SUCCESS"
+    elif command_type == Authorized.STATS.value:
+        bot.sendMessage(chat_id, "/stats appears soon")
+        return "SUCCESS"
 
-        elif command_type == Authorized.STATS_TIME:
-            hours_format = re.compile(time_pattern)
-            if not hours_format.match(command_mode):
-                bot.sendMessage(chat_id, "Incorrect pattern for time. Expected HH:mm but got: '{}'"
-                                .format(command_mode))
-                return "FAILED "
-
-            schedule.every().day.at(command_mode).do(mine_log_task, chat_id).tag(chat_id)
-            bot.sendMessage(chat_id, "Log notification has been set for chat id: {} everyday at: {}."
-                            .format(chat_id, command_mode))
-            bot.sendMessage(chat_id, "Remember that, set time before 23:49.")
-            return "SUCCESS"
-        elif command_type == Authorized.STATS_JOBS:
-            bot.sendMessage(chat_id, "All daily task are listed down:\n{}"
-                            .format(schedule.get_jobs()))
-            return "SUCCESS"
-
-        elif command_type == Authorized.STATS_CANCEL:
-            schedule.clear(chat_id)
-            bot.sendMessage(chat_id, "Log notification has been canceled for chat id: {}"
-                            .format(chat_id))
-            return "SUCCESS"
-
-        else:
-            bot.sendMessage(chat_id, "Super user, unsupported command: {} ;//"
-                            .format(command_type))
+    elif command_type == Authorized.STATS_TIME.value:
+        hours_format = re.compile(time_pattern)
+        if not hours_format.match(command_mode):
+            bot.sendMessage(chat_id, "Incorrect pattern for time. Expected HH:mm but got: '{}'".format(command_mode))
             return "FAILED "
+
+        schedule.every().day.at(command_mode).do(mine_log_task, chat_id).tag(chat_id)
+
+        bot.sendMessage(chat_id, "Notification has been set everyday at: {}.".format(command_mode))
+        bot.sendMessage(chat_id, "Remember that, set time before 23:49.")
+        return "SUCCESS"
+
+    elif command_type == Authorized.STATS_JOBS.value:
+        bot.sendMessage(chat_id, "Function for notification log: mine_log_task(CHAT_ID)")
+        bot.sendMessage(chat_id, "All daily task are listed down:\n{}".format(schedule.get_jobs()))
+        return "SUCCESS"
+
+    elif command_type == Authorized.STATS_CANCEL.value:
+        schedule.clear(chat_id)
+        bot.sendMessage(chat_id, "Log notification has been canceled for chat id: {}".format(chat_id))
+        return "SUCCESS"
+
     else:
-        bot.sendMessage(chat_id, "Sorry, you are unauthorized to use that command!")
-        return "FAILED "
+        return normal_commands(user_id, chat_id, command_type)
 
 
 def normal_commands(user_id, chat_id, command_type):
-    if command_type == Unauthorized.ROLL:
+    if command_type == Unauthorized.ROLL.value:
         bot.sendMessage(chat_id, random.randint(1, 6))
         return "SUCCESS"
 
-    elif command_type == Unauthorized.TIME:
+    elif command_type == Unauthorized.TIME.value:
         bot.sendMessage(chat_id, str(datetime.datetime.now()))
         return "SUCCESS"
 
-    elif command_type == Unauthorized.ID:
+    elif command_type == Unauthorized.ID.value:
         bot.sendMessage(chat_id, "Your telegram id is: {}".format(user_id))
         return "SUCCESS"
 
@@ -140,7 +109,6 @@ def normal_commands(user_id, chat_id, command_type):
 
 
 def handle(msg):
-    global status
     chat_id = msg['chat']['id']
     command = msg['text']
     user_id = msg['from']['id']
@@ -148,8 +116,10 @@ def handle(msg):
     split_command = command.split(" ")
     command_type = split_command[0]
     command_mode = ""
+    status = "FAILED "
 
     if OWNERS_ID.__contains__(user_id):
+
         if len(split_command) > 1:
             command_mode = split_command[1]
         status = owners_commands(user_id, chat_id, command_type, command_mode)
@@ -158,19 +128,14 @@ def handle(msg):
         status = normal_commands(user_id, chat_id, command_type)
 
     print(' {},       {},      {},     {},     {} '
-          .format(datetime.datetime.now(),
-                  chat_id,
-                  user_id,
-                  status,
-                  command))
+          .format(datetime.date.today(), chat_id, user_id, status, command))
 
 
-status = "FAILED "
 MessageLoop(bot, handle).run_as_thread()
 # ################# DO NOT DELETE THIS LINE #################
 # redirect_std_out()
-print("I am listening since {}...".format(datetime.datetime.now()))
-print(' Date,       User,      Chat id,     Status,     Command ')
+print("I am listening since {}...".format(datetime.date.today()))
+print('     Date,           User,          Chat id,      Status,     Command')
 
 while 1:
     schedule.run_pending()
