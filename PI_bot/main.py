@@ -89,74 +89,75 @@ class Log:
                 buffered_string = ""
         bot.sendMessage(chat_id, buffered_string)
 
+    @staticmethod
+    def mine_log_task(chat_id):
+        build_message = []
+        # reading log here
+        with open(path_to_log, encoding='utf8') as f:
+            for line in f:
+                if 'sshd' in line:
+                    file_sshd_service_data.append("{}".format(line.strip()))
 
-def mine_log_task(chat_id):
-    build_message = []
-    # reading log here
-    with open(path_to_log, encoding='utf8') as f:
-        for line in f:
-            if 'sshd' in line:
-                file_sshd_service_data.append("{}".format(line.strip()))
+        # mining text for each defined user
+        for user in users:
+            for line_file in file_sshd_service_data:
 
-    # mining text for each defined user
-    for user in users:
-        for line_file in file_sshd_service_data:
+                # splitting by "sshd" is required, because it allows to
+                # process independently date fragment and user, ip address, port fragment
+                split_line = line_file.split("sshd")
 
-            # splitting by "sshd" is required, because it allows to
-            # process independently date fragment and user, ip address, port fragment
-            split_line = line_file.split("sshd")
+                # processing fragment with user, ip address, port
+                if user in split_line[1]:
 
-            # processing fragment with user, ip address, port
-            if user in split_line[1]:
+                    # login correct
+                    if 'Accepted' in line_file:
+                        string_log = " - {} | {}".format(Log.get_date(split_line[0]), Log.get_ip(split_line[1]))
+                        users_correct_logins_in[user].append(string_log)
 
-                # login correct
-                if 'Accepted' in line_file:
-                    string_log = " - {} | {}".format(Log.get_date(split_line[0]), Log.get_ip(split_line[1]))
-                    users_correct_logins_in[user].append(string_log)
+                    # login failed
+                    elif 'Failed' in line_file:
+                        string_log = " - {} | {}".format(Log.get_date(split_line[0]), Log.get_ip(split_line[1]))
+                        users_failed_logins_tries[user].append(string_log)
 
-                # login failed
-                elif 'Failed' in line_file:
-                    string_log = " - {} | {}".format(Log.get_date(split_line[0]), Log.get_ip(split_line[1]))
-                    users_failed_logins_tries[user].append(string_log)
+                # not existing user in SFTP server
+                elif 'Invalid' in line_file:
+                    string_log = " - {} | {}".format(Log.get_date(split_line[0]), split_line[1].split(":")[1])
+                    other_invalid_tries.append(string_log)
 
-            # not existing user in SFTP server
-            elif 'Invalid' in line_file:
-                string_log = " - {} | {}".format(Log.get_date(split_line[0]), split_line[1].split(":")[1])
-                other_invalid_tries.append(string_log)
+            correct_count = 0
+            failed_count = 0
+            build_message.append("[{}] Log for user: {} ".format(datetime.date.today(), user))
+            build_message.append("Total correct logins")
 
-        correct_count = 0
-        failed_count = 0
-        build_message.append("[{}] Log for user: {} ".format(datetime.date.today(), user))
-        build_message.append("Total correct logins")
+            # building correct log for user
+            for user_correct_log in users_correct_logins_in[user]:
+                correct_count += 1
+                build_message.append(user_correct_log)
+            if correct_count == 0:
+                build_message.append(" - no correct logins for user: {}".format(user))
 
-        # building correct log for user
-        for user_correct_log in users_correct_logins_in[user]:
-            correct_count += 1
-            build_message.append(user_correct_log)
-        if correct_count == 0:
-            build_message.append(" - no correct logins for user: {}".format(user))
+            # building incorrect log for user
+            build_message.append("Total failed logins")
+            for user_failed_log in users_failed_logins_tries[user]:
+                failed_count += 1
+                build_message.append(user_failed_log)
+            if failed_count == 0:
+                build_message.append(" - no failed logins for user: {}".format(user))
 
-        # building incorrect log for user
-        build_message.append("Total failed logins")
-        for user_failed_log in users_failed_logins_tries[user]:
-            failed_count += 1
-            build_message.append(user_failed_log)
-        if failed_count == 0:
-            build_message.append(" - no failed logins for user: {}".format(user))
+            # building summary
+            build_message.append(
+                "Correct logins count: {}, Failed logins count: {}\n".format(correct_count, failed_count))
 
-        # building summary
-        build_message.append("Correct logins count: {}, Failed logins count: {}\n".format(correct_count, failed_count))
+        # building invalid log
+        build_message.append("\nInvalid logins to SFTP server")
+        if len(other_invalid_tries) == 0:
+            build_message.append(" - no invalid logins to server")
+        else:
+            for invalid_log in other_invalid_tries:
+                build_message.append(invalid_log)
 
-    # building invalid log
-    build_message.append("\nInvalid logins to SFTP server")
-    if len(other_invalid_tries) == 0:
-        build_message.append(" - no invalid logins to server")
-    else:
-        for invalid_log in other_invalid_tries:
-            build_message.append(invalid_log)
-
-    # sending message to user
-    Log.send_log(build_message, chat_id)
+        # sending message to user
+        Log.send_log(build_message, chat_id)
 
 
 def owners_commands(user_id, chat_id, command_type, command_mode):
@@ -178,7 +179,7 @@ def owners_commands(user_id, chat_id, command_type, command_mode):
         return "SUCCESS"
 
     elif command_type == Authorized.STATS.value:
-        mine_log_task(chat_id)
+        Log.mine_log_task(chat_id)
         return "SUCCESS"
 
     elif command_type == Authorized.STATS_TIME.value:
@@ -187,14 +188,14 @@ def owners_commands(user_id, chat_id, command_type, command_mode):
             bot.sendMessage(chat_id, "Incorrect pattern for time. Expected HH:mm but got: '{}'".format(command_mode))
             return "FAILED "
 
-        schedule.every().day.at(command_mode).do(mine_log_task, chat_id).tag(chat_id)
+        schedule.every().day.at(command_mode).do(Log.mine_log_task, chat_id).tag(chat_id)
 
         bot.sendMessage(chat_id, "Notification has been set everyday at: {}.".format(command_mode))
         bot.sendMessage(chat_id, "Remember that, set time before 23:49.")
         return "SUCCESS"
 
     elif command_type == Authorized.STATS_JOBS.value:
-        bot.sendMessage(chat_id, "Function for notification: mine_log_task(CHAT_ID)")
+        bot.sendMessage(chat_id, "Function for notification: Log.mine_log_task(CHAT_ID)")
         bot.sendMessage(chat_id, "All daily task are listed down:\n{}".format(schedule.get_jobs()))
         return "SUCCESS"
 
