@@ -159,12 +159,10 @@ class Log:
         # sending message to user
         Log.send_log(build_message, chat_id)
 
-
-def owners_commands(user_id, chat_id, command_type, command_mode):
-    if command_type == Authorized.SELF.value:
+    @staticmethod
+    def read_raw_log(chat_id, path):
         file_data = ""
-        bot.sendMessage(chat_id, "Reading file...")
-        with open(path_to_bot_log, encoding='utf8') as f:
+        with open(path, encoding='utf8') as f:
             for line in f:
                 file_data += line.strip()
                 if len(file_data) > MAX_LENGTH_OF_MESSAGE:
@@ -172,13 +170,21 @@ def owners_commands(user_id, chat_id, command_type, command_mode):
                     file_data = ""
 
         bot.sendMessage(chat_id, file_data)
+
+
+def owners_commands(user_id, chat_id, command_type, command_mode):
+    if command_type == Authorized.SELF.value:
+        bot.sendMessage(chat_id, "Reading raw log file...")
+        Log.read_raw_log(chat_id, path_to_bot_log)
         return "SUCCESS"
 
     elif command_type == Authorized.AUTH.value:
-        bot.sendMessage(chat_id, "/auth appears soon")
+        bot.sendMessage(chat_id, "Reading raw log file...")
+        Log.read_raw_log(chat_id, path_to_log)
         return "SUCCESS"
 
     elif command_type == Authorized.STATS.value:
+        bot.sendMessage(chat_id, "Reading log file...")
         Log.mine_log_task(chat_id)
         return "SUCCESS"
 
