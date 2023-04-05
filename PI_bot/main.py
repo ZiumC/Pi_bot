@@ -9,18 +9,35 @@ import telepot
 from enum import Enum
 from telepot.loop import MessageLoop
 
+# your telegram ID
 OWNERS_ID = []
+# your telegram bot API KEY
 bot = telepot.Bot('')
 
+# telegram bot can handle with 4096 message length
+# i recommend that to leave this value at 3800
+MAX_LENGTH_OF_MESSAGE = 3800
+
 time_pattern = "^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"
+
+# if you are using your bot on rasberry pi and you want to log all data from bot
+# specify output path here
 path_to_bot_log = ""
-output_path = ""
+
+# if you want to mine your /var/log/auth.log just put path here
 path_to_log = ""
 
 file_sshd_service_data = []
+# put here your name which you are using in SFTP
+users = ['pi']
 
-users = []
+# if you have more than one name write:
+# for 2 users: users_correct_logins_in = {users[0]: [], users[1]: []}
+#              users_failed_logins_tries = {users[0]: [], users[1]: []}
 
+# for 3 users: users_correct_logins_in = {users[0]: [], users[1]: [], users[2]: []}
+#              users_failed_logins_tries = {users[0]: [], users[1]: [], users[2]: []}
+# and so on...
 users_correct_logins_in = {users[0]: []}
 users_failed_logins_tries = {users[0]: []}
 other_invalid_tries = []
@@ -43,7 +60,7 @@ class Authorized(Enum):
 
 def redirect_std_out():
     sys.stdout.flush()
-    os.system(output_path)
+    os.system(path_to_bot_log)
 
 
 class Log:
@@ -67,7 +84,7 @@ class Log:
             buffered_string += "{}\n".format(line_to_build)
 
             # 3800 is needed to check because max length bot message is 4096 so 3800 is quite safe
-            if len(buffered_string) > 3800:
+            if len(buffered_string) > MAX_LENGTH_OF_MESSAGE:
                 bot.sendMessage(chat_id, buffered_string)
                 buffered_string = ""
         bot.sendMessage(chat_id, buffered_string)
@@ -149,7 +166,7 @@ def owners_commands(user_id, chat_id, command_type, command_mode):
         with open(path_to_bot_log, encoding='utf8') as f:
             for line in f:
                 file_data += line.strip()
-                if len(file_data) > 4080:
+                if len(file_data) > MAX_LENGTH_OF_MESSAGE:
                     bot.sendMessage(chat_id, "{}\n".format(file_data))
                     file_data = ""
 
@@ -161,7 +178,7 @@ def owners_commands(user_id, chat_id, command_type, command_mode):
         return "SUCCESS"
 
     elif command_type == Authorized.STATS.value:
-        bot.sendMessage(chat_id, "/stats appears soon")
+        mine_log_task(chat_id)
         return "SUCCESS"
 
     elif command_type == Authorized.STATS_TIME.value:
