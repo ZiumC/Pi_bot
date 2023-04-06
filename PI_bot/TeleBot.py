@@ -7,6 +7,7 @@ import schedule
 import re
 import telepot
 from PrimitiveLogger import Log
+from PrimitiveLogger import LogSender
 from enum import Enum
 from telepot.loop import MessageLoop
 
@@ -67,27 +68,19 @@ def owners_commands(user_id, chat_id, command_type, command_mode):
     if command_type == Authorized.SELF.value:
         bot.sendMessage(chat_id, "Reading raw log file...")
         raw_log = Log.read_raw_log(path_to_bot_log)
+        LogSender.send_log(raw_log, chat_id, bot, MAX_LENGTH_OF_MESSAGE)
         return "SUCCESS"
 
     elif command_type == Authorized.AUTH.value:
         bot.sendMessage(chat_id, "Reading raw log file...")
         raw_log = Log.read_raw_log(path_to_log)
+        LogSender.send_log(raw_log, chat_id, bot, MAX_LENGTH_OF_MESSAGE)
         return "SUCCESS"
 
     elif command_type == Authorized.STATS.value:
         bot.sendMessage(chat_id, "Reading log file...")
-        file_data = ""
-
-        for line in Log.mine_log_task(path_to_log, users):
-            file_data += "{}\n".format(line)
-
-            if len(file_data) > MAX_LENGTH_OF_MESSAGE:
-                bot.sendMessage(chat_id, file_data)
-                file_data = ""
-
-        bot.sendMessage(chat_id, file_data)
-        print(file_data)
-
+        statistics_log = Log.mine_log_task(path_to_log, users)
+        LogSender.send_log(statistics_log, chat_id, bot, MAX_LENGTH_OF_MESSAGE)
         return "SUCCESS"
 
     elif command_type == Authorized.STATS_TIME.value:

@@ -15,19 +15,6 @@ class Log:
         return "{}:{}".format(ip_data[0], ip_data[1])
 
     @staticmethod
-    def send_log(message_to_sent, chat_id, bot, max_mess_len=3800):
-        buffered_string = ""
-
-        for line_to_build in message_to_sent:
-            buffered_string += "{}\n".format(line_to_build)
-
-            # 3800 is needed to check because max length bot message is 4096 so 3800 is quite safe
-            if len(buffered_string) > max_mess_len:
-                bot.sendMessage(chat_id, buffered_string)
-                buffered_string = ""
-        bot.sendMessage(chat_id, buffered_string)
-
-    @staticmethod
     def read_raw_log(path):
         file_data = []
 
@@ -118,3 +105,20 @@ class Log:
                 build_message.append(invalid_log)
 
         return build_message
+
+
+class LogSender:
+    # message_to_sent must be a list!
+    @staticmethod
+    def send_log(message_to_sent, chat_id, bot, max_mess_len=3800):
+        buffered_string = ""
+
+        for line_to_build in message_to_sent:
+            buffered_string += "{}\n".format(line_to_build)
+
+            # buffered_string len is needed to check because max length bot message is 4096 so 3800 is quite safe
+            if len(buffered_string) > max_mess_len:
+                bot.sendMessage(chat_id, buffered_string)
+                buffered_string = ""
+
+        bot.sendMessage(chat_id, buffered_string)
