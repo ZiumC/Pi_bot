@@ -27,7 +27,6 @@ path_to_bot_log = ""
 # if you want to mine your /var/log/auth.log just put path here
 path_to_log = ""
 
-file_sshd_service_data = []
 # put here your name which you are using in SFTP
 users = ['pi']
 
@@ -88,9 +87,11 @@ class Log:
                 bot.sendMessage(chat_id, buffered_string)
                 buffered_string = ""
         bot.sendMessage(chat_id, buffered_string)
+        buffered_string = ""
 
     @staticmethod
     def mine_log_task(chat_id):
+        file_sshd_service_data = []
         build_message = []
         # reading log here
         with open(path_to_log, encoding='utf8') as f:
@@ -144,6 +145,8 @@ class Log:
             if failed_count == 0:
                 build_message.append(" - no failed logins for user: {}".format(user))
 
+            users_correct_logins_in[user].clear()
+            users_failed_logins_tries[user].clear()
             # building summary
             build_message.append(
                 "Correct logins count: {}, Failed logins count: {}\n".format(correct_count, failed_count))
@@ -158,6 +161,9 @@ class Log:
 
         # sending message to user
         Log.send_log(build_message, chat_id)
+        file_sshd_service_data.clear()
+        build_message.clear()
+        other_invalid_tries.clear()
 
     @staticmethod
     def read_raw_log(chat_id, path):
