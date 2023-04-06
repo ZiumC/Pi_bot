@@ -32,17 +32,6 @@ path_to_log = ""
 # put here your name which you are using in SFTP
 users = ['pi']
 
-# if you have more than one name write:
-# for 2 users: users_correct_logins_in = {users[0]: [], users[1]: []}
-#              users_failed_logins_tries = {users[0]: [], users[1]: []}
-
-# for 3 users: users_correct_logins_in = {users[0]: [], users[1]: [], users[2]: []}
-#              users_failed_logins_tries = {users[0]: [], users[1]: [], users[2]: []}
-# and so on...
-users_correct_logins_in = {users[0]: []}
-users_failed_logins_tries = {users[0]: []}
-other_invalid_tries = []
-
 
 class Unauthorized(Enum):
     ROLL = '/roll'
