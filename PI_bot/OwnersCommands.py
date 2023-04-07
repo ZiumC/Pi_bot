@@ -5,8 +5,12 @@ import re
 import schedule
 import PublicCommands
 
-
 time_pattern = "^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"
+
+
+def process_daily_log(chat_id, bot, max_mess_len, path_to_log, users):
+    statistics_log = Log.mine_log_task(path_to_log, users)
+    LogSender.send_log(statistics_log, chat_id, bot, max_mess_len)
 
 
 class AuthorizedCommands(Enum):
@@ -20,10 +24,10 @@ class AuthorizedCommands(Enum):
 
 class Admin:
 
-    def __init__(self, path_to_bot_log, path_to_log, MAX_LENGTH_OF_MESSAGE, users):
+    def __init__(self, path_to_bot_log, path_to_log, max_mess_len, users):
         self.path_to_bot_log = path_to_bot_log
         self.path_to_log = path_to_log
-        self.MAX_LENGTH_OF_MESSAGE = MAX_LENGTH_OF_MESSAGE
+        self.MAX_LENGTH_OF_MESSAGE = max_mess_len
         self.users = users
 
     def process_command(self, user_id, chat_id, bot, command_type, command_mode):
@@ -58,7 +62,7 @@ class Admin:
                                 "Incorrect pattern for time. Expected HH:mm but got: '{}'".format(command_mode))
                 return "FAILED "
 
-            schedule.every().day.at(command_mode).do(Log.mine_log_task, chat_id).tag(chat_id)
+            schedule.every().day.at(command_mode).do(process_daily_log, chat_id, bot, self.MAX_LENGTH_OF_MESSAGE, self.path_to_log, self.users).tag(chat_id)
 
             bot.sendMessage(chat_id, "Notification has been set everyday at: {}.".format(command_mode))
             bot.sendMessage(chat_id, "Remember that, set time before 23:49.")

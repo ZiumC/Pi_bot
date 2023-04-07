@@ -18,11 +18,10 @@ bot = telepot.Bot('')
 MAX_LENGTH_OF_MESSAGE = 3800
 
 
-# if you are using your bot on rasberry pi and you want to log all data from bot
-# specify output path here
+# specify output path for log here
 path_to_bot_log = ""
 
-# if you want to mine your /var/log/auth.log just put path here
+# if you want to mine your log with sshd service just put path here
 path_to_log = ""
 
 # put here your name which you are using in SFTP
