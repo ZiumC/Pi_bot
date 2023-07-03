@@ -4,6 +4,7 @@ from PrimitiveLogger import LogSender
 import re
 import schedule
 import PublicCommands
+import subprocess
 
 time_pattern = "^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"
 
@@ -17,6 +18,7 @@ class AuthorizedCommands(Enum):
     SELF = '/self'
     AUTH = '/auth'
     STATS = '/stats'
+    MOUNT_DISC = '/mount'
     STATS_TIME = '/stats_time'
     STATS_JOBS = '/stats_jobs'
     STATS_CANCEL = '/stats_cancel'
@@ -76,6 +78,12 @@ class Admin:
         elif command_type == AuthorizedCommands.STATS_CANCEL.value:
             schedule.clear(chat_id)
             bot.sendMessage(chat_id, "Log notification has been canceled for chat id: {}".format(chat_id))
+            return "SUCCESS"
+
+        elif command_type == AuthorizedCommands.MOUNT_DISC.value:
+            bot.sendMessage(chat_id, "You have to wait 33 seconds till disc would be mounted")
+            subprocess.call(['sh', '[PATH TO YOUR SCRIPT]'])
+            bot.sendMessage(chat_id, "Done!")
             return "SUCCESS"
 
         else:
